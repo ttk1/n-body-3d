@@ -1,3 +1,5 @@
+import { rotation } from './rotation';
+
 window.onload = () => {
   const canvas = document.getElementById('canvas') as HTMLCanvasElement;
   canvas.width = 500;
@@ -98,36 +100,33 @@ window.onload = () => {
   const fb = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
-  let mouse_x = null;
-  let mouse_y = null;
-  let rot = require('./rot').rot_x(0);
-
-  canvas.addEventListener('mousemove', onMouseMove, false);
+  let mouseX: number = null;
+  let mouseY: number = null;
+  let rot = rotation(0, 0, 0);
+  const rotIdx = gl.getUniformLocation(program2, 'rot');
+  gl.useProgram(program2);
+  gl.uniformMatrix4fv(rotIdx, false, rot.toArray());
 
   // マウス操作
-  function onMouseMove(event) {
-    if (mouse_x == null || mouse_y == null) {
-      mouse_x = event.offsetX;
-      mouse_y = event.offsetY;
-    }
-    const diff_x = event.offsetX - mouse_x;
-    const diff_y = event.offsetY - mouse_y;
-    mouse_x = event.offsetX;
-    mouse_y = event.offsetY;
+  canvas.addEventListener('mousemove', onMouseMove, false);
 
-    const rot_x = require('./rot').rot_x(diff_y * 0.01);
-    const rot_y = require('./rot').rot_y(diff_x * 0.01);
-    rot = rot_x.mul(rot_y).mul(rot);
+  function onMouseMove(event: MouseEvent) {
+    let diffX: number;
+    let diffY: number;
+    if (mouseX == null || mouseY == null) {
+      diffX = event.offsetX;
+      diffY = event.offsetY;
+    } else {
+      diffX = event.offsetX - mouseX;
+      diffY = event.offsetY - mouseY;
+    }
+    mouseX = event.offsetX;
+    mouseY = event.offsetY;
+
+    rot = rotation(diffY * 0.01, diffX * 0.01, 0).mul(rot);
     gl.useProgram(program2);
-    let idx = gl.getUniformLocation(program2, 'rot');
-    gl.uniformMatrix4fv(idx, false, rot.getArray());
+    gl.uniformMatrix4fv(rotIdx, false, rot.toArray());
   }
-  gl.useProgram(program2);
-  const rot_x = require('./rot').rot_x(0);
-  const rot_y = require('./rot').rot_y(0);
-  rot = rot_x.mul(rot_y).mul(rot);
-  let idx = gl.getUniformLocation(program2, 'rot');
-  gl.uniformMatrix4fv(idx, false, rot.getArray());
 
   // 実行開始!
   step();
